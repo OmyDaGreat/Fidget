@@ -1,4 +1,4 @@
-rootProject.name = "MaleficMobile"
+rootProject.name = "Fidget"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {

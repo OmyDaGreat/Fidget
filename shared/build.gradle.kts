@@ -59,6 +59,7 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.androidx.compose.ui.tooling.preview)
             implementation(libs.ktor.client.okhttp)
+            implementation(libs.bundles.glance)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
@@ -69,6 +70,7 @@ kotlin {
             implementation(libs.navigation.compose)
             implementation(libs.lifecycle.runtime.compose)
             implementation(libs.material.icons.core)
+            implementation(libs.material.icons.extended)
 
             implementation(libs.bundles.ktor)
 

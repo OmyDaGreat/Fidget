@@ -1,4 +1,4 @@
-= Fidget Library
+= Fidget - Unified Widget Library
 OmyDaGreat
 
 [.custom-toc]
@@ -8,14 +8,20 @@ OmyDaGreat
 | 📚 **Table of Contents**
 
 * <<introduction,Introduction>>
+* <<features,Features>>
 * <<installation,Installation>>
 * <<getting-started,Getting Started>>
-  ** <<add-dependency,Add Dependency to Your Project>>
-  ** <<basic-usage,Basic Usage>>
-* <<project-structure,Project Structure>>
+  ** <<add-dependency,Add Dependency>>
+  ** <<create-widget,Create Your First Widget>>
+  ** <<android-setup,Android Setup>>
+  ** <<ios-setup,iOS Setup>>
+* <<examples,Examples>>
+  ** <<simple-widget,Simple Widget>>
+  ** <<multi-size-widget,Multi-Size Widget>>
+  ** <<data-widget,Widget with Data>>
+* <<api-reference,API Reference>>
+* <<how-it-works,How It Works>>
 * <<building,Building the Library>>
-* <<documentation,Documentation>>
-* <<help,Need Help?>>
 * <<license,License>>
 |===
 --
@@ -23,27 +29,49 @@ OmyDaGreat
 [id="introduction"]
 == Introduction
 
-Fidget is a Kotlin Multiplatform library for building cross-platform mobile applications with Compose Multiplatform.  
-This library targets both Android and iOS, providing shared UI components and logic via KMP.
+**Fidget** is a Kotlin Multiplatform library that provides a unified DSL for building home screen widgets on both Android and iOS. Write your widget UI once using Compose Multiplatform, and Fidget handles the platform-specific integration with:
+
+* **Android**: Jetpack Glance
+* **iOS**: WidgetKit (via Swift interop)
+
+[id="features"]
+== Features
+
+✨ **Write Once, Run Everywhere**::
+Define widgets using Compose Multiplatform UI code that works on both platforms
+
+🎯 **Declarative DSL**::
+Clean, intuitive API inspired by Compose and SwiftUI
+
+📐 **Multi-Size Support**::
+Easily support different widget sizes (Small, Medium, Large, Extra Large)
+
+🔄 **Flexible Updates**::
+Configure periodic, timeline-based, or manual widget updates
+
+📊 **Data Providers**::
+Built-in support for asynchronous data fetching
+
+🎨 **Type-Safe**::
+Fully type-safe widget configuration and data handling
 
 [id="installation"]
 == Installation
 
 === Requirements
 
-* Java 17+
-* Kotlin 1.9+
+* Kotlin 2.3.20+
 * Gradle 8.0+
-* (For Android): Android SDK with compileSdk 36+
-* (For iOS): Xcode and a Mac
+* **Android**: compileSdk 36+, minSdk 24+
+* **iOS**: iOS 14+, Xcode
 
 [id="getting-started"]
 == Getting Started
 
 [id="add-dependency"]
-=== 1. Add Dependency to Your Project
+=== 1. Add Dependency
 
-Add the following to your project's `build.gradle.kts`:
+Add Fidget to your `shared` module:
 
 [source,kotlin]
 ----
@@ -56,80 +84,284 @@ kotlin {
 }
 ----
 
-[id="basic-usage"]
-=== 2. Basic Usage
-
-Import and use the library components in your Compose Multiplatform application:
+[id="create-widget"]
+=== 2. Create Your First Widget
 
 [source,kotlin]
 ----
 @Composable
-fun MyApp() {
-    App()
+fun MyFirstWidget() = FidgetWidget(
+    configuration = WidgetConfig(
+        displayName = "Hello Widget",
+        description = "My first Fidget widget",
+        supportedFamilies = listOf(WidgetFamily.Small)
+    )
+) { family ->
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text("Hello, Widgets! 👋")
+    }
 }
 ----
 
-[id="project-structure"]
-== Project Structure
+[id="android-setup"]
+=== 3. Android Setup
 
-Fidget is a Kotlin Multiplatform library with shared business logic and UI components for Android and iOS.
+Create a receiver for your widget:
+
+[source,kotlin]
+----
+// In androidMain/kotlin
+class MyWidgetReceiver : FidgetGlanceReceiver<EmptyWidgetData>("Hello Widget")
+----
+
+Register in `AndroidManifest.xml`:
+
+[source,xml]
+----
+<receiver
+    android:name=".MyWidgetReceiver"
+    android:exported="true">
+    <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+    </intent-filter>
+    <meta-data
+        android:name="android.appwidget.provider"
+        android:resource="@xml/my_widget_info" />
+</receiver>
+----
+
+Create `res/xml/my_widget_info.xml`:
+
+[source,xml]
+----
+<appwidget-provider
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="40dp"
+    android:minHeight="40dp"
+    android:updatePeriodMillis="900000"
+    android:initialLayout="@layout/widget_loading"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen" />
+----
+
+[id="ios-setup"]
+=== 4. iOS Setup
+
+Fidget uses Compose Multiplatform's native rendering on iOS via `ComposeUIViewController`. This provides **full interactivity** - buttons, gestures, and animations all work!
+
+==== Step 1: Add Widget Extension Target
+
+In Xcode:
+1. File → New → Target → Widget Extension
+2. Name it (e.g., "MyAppWidget")
+3. Add your Kotlin framework to the target
+
+==== Step 2: Create Swift Bridge
+
+[source,swift]
+----
+import SwiftUI
+import WidgetKit
+import ComposeApp
+
+struct FidgetComposeWidgetView: UIViewControllerRepresentable {
+    let widgetName: String
+    let family: WidgetFamily
+    
+    func makeUIViewController(context: Context) -> UIViewController {
+        return FidgetWidgetBridge.shared.createWidgetViewController(
+            widgetName: widgetName,
+            family: family.toFidgetFamily()
+        ) ?? UIViewController()
+    }
+    
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
+}
+----
+
+==== Step 3: Create Widget Configuration
+
+[source,swift]
+----
+@main
+struct MyAppWidgetBundle: WidgetBundle {
+    var body: some Widget {
+        CounterWidget()
+    }
+}
+
+struct CounterWidget: Widget {
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: "Counter", provider: Provider()) { entry in
+            FidgetComposeWidgetView(
+                widgetName: "Counter",
+                family: entry.family
+            )
+        }
+        .configurationDisplayName("Counter")
+        .supportedFamilies([.systemSmall])
+    }
+}
+----
+
+[id="examples"]
+== Examples
+
+[id="simple-widget"]
+=== Simple Widget
+
+[source,kotlin]
+----
+@Composable
+fun CounterWidget(count: Int = 0) = FidgetWidget(
+    configuration = WidgetConfig(
+        displayName = "Counter",
+        supportedFamilies = listOf(WidgetFamily.Small)
+    )
+) { family ->
+    Box(Modifier.fillMaxSize(), Alignment.Center) {
+        Text(
+            text = count.toString(),
+            style = MaterialTheme.typography.displayLarge
+        )
+    }
+}
+----
+
+[id="multi-size-widget"]
+=== Multi-Size Widget
+
+[source,kotlin]
+----
+@Composable
+fun ClockWidget() = FidgetWidget(
+    configuration = WidgetConfig(
+        displayName = "Clock",
+        supportedFamilies = listOf(
+            WidgetFamily.Small,
+            WidgetFamily.Medium
+        ),
+        updatePolicy = UpdatePolicy.Periodic(1.minutes)
+    )
+) { family ->
+    when (family) {
+        WidgetFamily.Small -> ClockCompact()
+        WidgetFamily.Medium -> ClockDetailed()
+        else -> ClockCompact()
+    }
+}
+----
+
+[id="data-widget"]
+=== Widget with Data
+
+[source,kotlin]
+----
+data class WeatherData(
+    val temp: Int,
+    val condition: String
+) : WidgetData
+
+class WeatherDataProvider : WidgetDataProvider<WeatherData> {
+    override suspend fun provide(): WeatherData {
+        // Fetch from API
+        return WeatherData(72, "Sunny")
+    }
+}
+
+@Composable
+fun WeatherWidget() = FidgetWidget(
+    configuration = WidgetConfig(
+        displayName = "Weather",
+        updatePolicy = UpdatePolicy.Periodic(30.minutes)
+    ),
+    dataProvider = WeatherDataProvider()
+) { context ->
+    val weather = context.data ?: return@FidgetWidget
+    
+    Column {
+        Text("${weather.temp}°")
+        Text(weather.condition)
+    }
+}
+----
+
+[id="api-reference"]
+== API Reference
+
+=== Core Components
+
+**`FidgetWidget`**::
+Main entry point for creating widgets. Accepts configuration and composable content.
+
+**`WidgetConfig`**::
+Configuration object with display name, description, supported sizes, and update policy.
+
+**`WidgetFamily`**::
+Enum of widget sizes: `Small`, `Medium`, `Large`, `ExtraLarge`, `AccessoryRectangular`, `AccessoryCircular`, `AccessoryInline`
+
+**`UpdatePolicy`**::
+Defines widget update behavior: `Periodic`, `Timeline`, `Manual`, `Conditional`
+
+**`WidgetData`**::
+Interface for widget data models
+
+**`WidgetDataProvider<T>`**::
+Interface for fetching widget data asynchronously
+
+[id="how-it-works"]
+== How It Works
+
+Fidget provides a common abstraction layer over platform-specific widget frameworks:
 
 [source,plaintext]
 ----
-Fidget/
-├── shared/                                       # Kotlin Multiplatform library module
-│   └── src/
-│       ├── androidMain/                          # Android-specific code
-│       │   └── kotlin/com/jetbrains/kmpapp/
-│       ├── iosMain/                              # iOS-specific code
-│       │   └── kotlin/com/jetbrains/kmpapp/
-│       │       └── MainViewController.kt         # iOS ViewController for Compose UI
-│       └── commonMain/                           # Shared Kotlin code (runs on both Android/iOS)
-│           └── kotlin/com/jetbrains/kmpapp/
-│               ├── App.kt                        # Main Composable, root of the UI
-│               └── screens/
-│                   ├── EmptyScreen.kt            # Example screen
-│                   └── DemoScreen.kt             # Example screen
-├── build.gradle.kts                              # Root build configuration
-└── README.adoc                                   # This file
+┌─────────────────────────────────┐
+│   Your Compose UI Code          │
+│   (commonMain)                   │
+└────────────┬────────────────────┘
+             │
+             ├──────────────┬──────────────┐
+             │              │              │
+    ┌────────▼─────┐ ┌─────▼──────┐ ┌────▼─────┐
+    │  Android     │ │    iOS     │ │  Future  │
+    │  (Glance)    │ │(Compose UI)│ │   (TBD)  │
+    └──────────────┘ └────────────┘ └──────────┘
 ----
+
+* **Android**: Your Compose code is directly rendered using Jetpack Glance composables (native Glance support)
+* **iOS**: Your Compose code is rendered using ComposeUIViewController → UIViewRepresentable → WidgetKit with **full interactivity** (buttons, gestures, animations)
+* **Interactive Widgets**: iOS 17+ supports truly interactive widgets; earlier versions use deep links
+* **Future**: Potential support for web widgets, desktop widgets, WatchOS complications
 
 [id="building"]
 == Building the Library
 
-To build the library locally:
+Build the library locally:
 
 [source,sh]
 ----
 ./gradlew :shared:build
 ----
 
-To generate documentation:
+Generate documentation:
 
 [source,sh]
 ----
-./gradlew dokkaHtmlMultiModule
+./gradlew dokkaGenerate
 ----
 
-The documentation will be generated in `build/dokka/html/`.
-
-[id="documentation"]
-== Documentation
-
-API documentation is generated using Dokka and can be built with:
+Run tests:
 
 [source,sh]
 ----
-./gradlew dokkaHtmlMultiModule
+./gradlew :shared:test
 ----
-
-[id="help"]
-== Need Help?
-
-* Open an issue in the GitHub repo.
-* See the official documentation for [Kotlin Multiplatform Mobile](https://kotlinlang.org/docs/multiplatform-mobile-getting-started.html) and [Compose Multiplatform](https://github.com/JetBrains/compose-multiplatform).
 
 [id="license"]
 == License
 
-This project is licensed under the MIT License. See `LICENSE` for details.
+This project is licensed under the MIT License. See link:LICENSE[LICENSE] for details.
