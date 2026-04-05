@@ -1,5 +1,16 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
+val user: String by project
+val dev: String by project
+val mail: String by project
+val devURL: String by project
+val repo: String by project
+val g: String by project
+val artifact: String by project
+val v: String by project
+val desc: String by project
+val inception: String by project
+
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidKotlinMultiplatformLibrary)
@@ -7,14 +18,18 @@ plugins {
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinxSerialization)
     alias(libs.plugins.dokka)
+    alias(libs.plugins.vanniktech.mavenPublish)
 }
+
+group = g
+version = v
 
 kotlin {
     // Android target is automatically created by com.android.kotlin.multiplatform.library plugin
     // Configure JVM target in android {} block below
     
     android {
-        namespace = "xyz.malefic.mobile.shared"
+        namespace = "xyz.malefic.fidget"
         compileSdk = 36
         minSdk = 24
         
@@ -61,5 +76,44 @@ kotlin {
 
             implementation(libs.bundles.malefic)
         }
+    }
+}
+
+mavenPublishing {
+    publishToMavenCentral()
+
+    signAllPublications()
+
+    coordinates(g, artifact, v)
+
+    pom {
+        name = repo
+        description = desc
+        inceptionYear = inception
+        url = "https://github.com/$user/$repo"
+        licenses {
+            license {
+                name = "MIT License"
+                url = "https://mit.malefic.xyz"
+            }
+        }
+        developers {
+            developer {
+                name = dev
+                email = mail
+                url = devURL
+            }
+        }
+        scm {
+            url = "https://github.com/$user/$repo"
+            connection = "scm:git:git://github.com/$user/$repo.git"
+            developerConnection = "scm:git:ssh://github.com/$user/$repo.git"
+        }
+    }
+}
+
+dokka {
+    pluginsConfiguration.html {
+        footerMessage.set("&copy; 2025 $dev <$mail>")
     }
 }
