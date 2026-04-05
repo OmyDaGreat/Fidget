@@ -29,13 +29,13 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build Android APK
-        run: ./gradlew :composeApp:assembleDebug
+        run: ./gradlew :androidApp:assembleDebug
 
       - name: Upload Android APK
         uses: actions/upload-artifact@v7
         with:
           name: android-apk
-          path: composeApp/build/outputs/apk/debug/*.apk
+          path: androidApp/build/outputs/apk/debug/*.apk
 
   release:
     needs: [build-android]

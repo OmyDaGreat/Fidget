@@ -34,4 +34,3 @@ dependencyResolutionManagement {
 
 include(":shared")
 include(":androidApp")
-include(":docs-site")
