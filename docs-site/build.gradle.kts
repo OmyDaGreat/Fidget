@@ -23,7 +23,7 @@ kotlin {
 
     sourceSets {
         jsMain.dependencies {
-            implementation(libs.bundles.compose)
+            implementation(libs.bundles.compose.web)
             implementation(libs.bundles.kobweb)
             implementation(libs.bundles.silk.icons)
         }

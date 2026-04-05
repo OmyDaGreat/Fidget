@@ -1,4 +1,4 @@
-package com.jetbrains.kmpapp
+package xyz.malefic.mobile.android
 
 import android.app.Application
 

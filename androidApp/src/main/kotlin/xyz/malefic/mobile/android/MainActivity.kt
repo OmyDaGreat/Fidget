@@ -1,4 +1,4 @@
-package com.jetbrains.kmpapp
+package xyz.malefic.mobile.android
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.LaunchedEffect
+import com.jetbrains.kmpapp.App
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
