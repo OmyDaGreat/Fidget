@@ -14,7 +14,7 @@ navigationCompose = "2.9.2"
 lifecycleCompose = "2.10.0"
 malefic-theming = "2.3.0"
 malefic-comps = "2.1.1"
-vanniktech-mavenPublish = "0.36.0"
+vanniktech-mavenPublish = "0.37.0"
 
 [libraries]
 androidx-compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview", version.ref = "androidx-ui-tooling" }
